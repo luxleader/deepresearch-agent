@@ -77,7 +77,7 @@ async def test_unread_sources_are_not_evidence(fake_backend, research_request):
 - [ ] **Step 2 Verify red**：`uv run pytest tests/test_contracts_backend.py -q`，预期契约/适配器不存在导致失败。
 - [ ] **Step 3 Implement**：建立上述模型和协议；SDK 原始字段先以固定提交源码与真实小样本确认，再收敛到自己的 schema。没有网络配置时运行明确 replay 模式；有网络配置时使用固定版本 GPTR。不将猜测的工具返回字段写成已验证事实。
 - [ ] **Step 4 Verify green**：同一命令全部 PASS；单独以 `uv run python scripts/run_demo.py --mode live --question "..."` 进行一题联网集成（脚本在 Task 7 完成前可用等效模块入口）。无凭据时写“联网未验证”，仍完成离线契约验证。
-- [ ] **Step 5 Record and commit**：新增独立变更文档，记录环境锁、上游提交、真实配置兼容性与验证，提交包含 `DR-<date>-002`；同步远端并回读。
+- [ ] **Step 5 Record and commit**：新增独立变更文档，记录环境锁、上游提交、真实配置兼容性与验证，提交包含 `DR-<date>-NNN`（按现有记录取下一编号）；同步远端并回读。
 
 ## Task 2 证据账本与全报告校验
 
