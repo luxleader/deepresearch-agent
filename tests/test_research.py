@@ -1,6 +1,8 @@
 import asyncio
 
 from deepresearch_app.backends.replay import ReplayBackend, ReplayModel
+from deepresearch_app.models import ReportClaim, ResearchReport
+from deepresearch_app.reporting import validate_report
 from deepresearch_app.research import run_research
 from deepresearch_app.storage import SQLiteStore
 
@@ -79,3 +81,17 @@ async def test_completed_run_does_not_spend_again(tmp_path, research_request):
     again = await run_research(run.run_id, backend, ReplayModel(), store)
     assert again.calls == first.calls
     assert len(backend.questions) == first.calls
+
+
+async def test_system_warning_ids_never_collide(tmp_path, research_request):
+    class CollisionModel(ReplayModel):
+        async def generate(self, prompt, schema):
+            result = await super().generate(prompt, schema)
+            if schema is ResearchReport:
+                result.claims.append(ReportClaim(id="system-limit-0", text="模型未知项", kind="uncertainty"))
+            return result
+    store = SQLiteStore(tmp_path / "collision.sqlite3")
+    run = store.create(research_request)
+    result = await run_research(run.run_id, ReplayBackend(), CollisionModel(), store)
+    assert result.status == "completed"
+    assert validate_report(result.report, result.sources, result.evidence).valid

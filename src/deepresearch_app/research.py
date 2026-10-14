@@ -103,8 +103,14 @@ async def run_research(run_id, backend, model, store, *, timeout=180):
             raise ValueError("报告核验失败：" + "; ".join(result.errors))
         for index, warning in enumerate(dict.fromkeys(state.warnings)):
             cid = f"system-limit-{index}"
+            existing = {claim.id for claim in state.report.claims}
+            while cid in existing:
+                cid += "-system"
             state.report.claims.append(ReportClaim(id=cid, text=warning, kind="uncertainty"))
             state.report.limitation_claim_ids.append(cid)
+        result = validate_report(state.report, state.sources, state.evidence)
+        if not result.valid:
+            raise ValueError("最终报告核验失败：" + "; ".join(result.errors))
         state.status = "completed"
         save("completed")
     except asyncio.CancelledError:

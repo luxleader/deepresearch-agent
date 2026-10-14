@@ -17,5 +17,6 @@ def gaps_prompt(state):
 
 def report_prompt(state, errors=None):
     return encode_prompt("REPORT：中文报告，所有段落引用claims账本。fact.text逐字复用supported evidence.claim。"
-                         "建议标recommendation，缺证据/冲突/过期标uncertainty。不要生成URL。摘要和表格只用claim ID。",
+                         "建议标recommendation，缺证据/冲突/过期标uncertainty。不要生成URL。摘要和表格只用claim ID，"
+                         "comparison.label和aspects的键也必须是名称/维度对应的claim ID，不允许自由文本。",
                          {"state": state.model_dump(mode="json"), "repair_errors": errors})
