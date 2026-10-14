@@ -58,6 +58,7 @@ class GPTRBackend:
                   "CONTEXT_FILTER": "keyword", "IMAGE_GENERATION_ENABLED": False,
                   "RETRIEVER": "tavily", "FAST_LLM": "openai:" + self.settings.model,
                   "SMART_LLM": "openai:" + self.settings.model, "STRATEGIC_LLM": "openai:" + self.settings.model}
+        config["LLM_KWARGS"] = self.settings.llm_kwargs()
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", dir=self.config_dir, delete=False, encoding="utf-8") as f:
             json.dump(config, f)
             path = f.name
