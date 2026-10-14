@@ -1,0 +1,13 @@
+services:
+  research:
+    build: .
+    ports:
+      - "127.0.0.1:8765:8765"
+    environment:
+      DR_MODE: replay
+      DR_DATABASE: runtime/research.sqlite3
+    volumes:
+      - research-data:/app/runtime
+    restart: "no"
+volumes:
+  research-data:

@@ -9,3 +9,15 @@
 | DR-20261014-002 | [本地 Git 历史与传输配置](2026-10-14-002-local-git-maintenance.md) | 核实远端 9 个文件、同步本地历史并记录 TLS 处理 |
 
 后续记录包括：需求来源、文件与行为、决策、实际验证、限制和回退。修复与新增需求另开记录，不用改写旧记录伪造过程。
+
+实施批次（逐次独立文档）：
+
+- [003 实施准备](2026-10-14-003-implementation-start.md)
+- [004 契约与底座](2026-10-14-004-contracts-backend.md)
+- [005 证据与报告](2026-10-14-005-evidence-reporting.md)
+- [006 存储与恢复](2026-10-14-006-storage-recovery.md)
+- [007 研究循环](2026-10-14-007-research-loop.md)
+- [008 接口与工作台](2026-10-14-008-api-workbench.md)
+- [009 评测工具](2026-10-14-009-evaluation.md)
+- [010 Qwen 配置](2026-10-14-010-qwen-provider.md)
+- [011 打包与维护](2026-10-14-011-packaging-maintenance.md)
