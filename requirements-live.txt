@@ -1,0 +1,2 @@
+# Optional live engine, pinned to the inspected upstream source.
+gpt-researcher @ git+https://github.com/assafelovic/gpt-researcher.git@3582a6841fe7dc801e2a34e34ee408641aea9bce
