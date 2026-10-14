@@ -46,12 +46,17 @@ async def main(args):
             a = b = FrozenBackend(packet, a)
         settings = {"model": configuration.model, "api_base": configuration.api_base, "temperature": 0}
     results = []
+    store = SQLiteStore(output / "runs.sqlite3")
+    store.recover_interrupted()
     for task in tasks[:args.limit]:
-        results.append(await run_pair(task, a, b, {"model": model, "store": SQLiteStore(output / "runs.sqlite3"),
-                                                  "settings": settings, "source_mode": args.mode}))
-    pairs, mapping = export_blind_pairs(results, args.seed)
-    for name, data in (("results.json", results), ("blind-pairs.json", pairs), ("private-mapping.json", mapping)):
-        (output / name).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        results.append(await run_pair(task, a, b, {"model": model, "store": store,
+                           "settings": settings, "source_mode": args.mode, "cache_dir": output / "pairs"}))
+        pairs, mapping = export_blind_pairs(results, args.seed)
+        for name, data in (("results.json", results), ("blind-pairs.json", pairs), ("private-mapping.json", mapping)):
+            path = output / name
+            temporary = path.with_suffix(".tmp")
+            temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+            temporary.replace(path)
     print(f"已保存 {len(results)} 对结果至 {output.resolve()}；无人工标注，质量指标未评分。")
 
 

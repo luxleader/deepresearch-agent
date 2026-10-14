@@ -3,6 +3,7 @@ import hashlib
 import json
 import random
 import time
+from pathlib import Path
 
 from .backends.gptr import UPSTREAM_COMMIT
 from .models import ResearchPacket, ResearchRequest
@@ -68,35 +69,80 @@ async def run_pair(task, backend_a, backend_b, config):
     safe_settings = config["settings"]
     if any("key" in k.lower() or "secret" in k.lower() for k in safe_settings):
         raise ValueError("Do not include credentials in evaluation settings")
-    start = time.perf_counter()
-    baseline, packet = await backend_a.baseline(request)
-    baseline_ms = int((time.perf_counter() - start) * 1000)
     store, model = config["store"], config["model"]
-    before = dict(getattr(model, "usage", {}))
-    run = store.create(request)
-    start = time.perf_counter()
-    state = await run_research(run.run_id, backend_b, model, store)
-    if state.status != "completed":
-        raise RuntimeError(state.error or "enhanced research failed")
-    after = getattr(model, "usage", {})
-    enhanced_usage = sum_usage(list(state.completed_steps.values()))
-    enhanced_usage["orchestrator_tokens"] = {k: after[k] - before.get(k, 0) for k in after} or None
-    manifest_a, manifest_b = source_manifest(packet.sources), source_manifest(state.sources)
-    if mode == "frozen" and manifest_a != manifest_b:
-        raise ValueError("Frozen comparison requires identical source corpus")
     settings_json = json.dumps(safe_settings, sort_keys=True, ensure_ascii=False)
-    return {"task": task, "source_mode": mode, "upstream_commit": UPSTREAM_COMMIT,
-            "settings": safe_settings, "config_hash": hashlib.sha256(settings_json.encode()).hexdigest(),
-            "budget": {"rounds": request.max_rounds, "outer_calls": request.max_calls, "concurrency": 2},
-            "comparison_scope": "frozen corpus writing/planning" if mode == "frozen" else mode,
-            "arms": {"baseline": {"report": baseline, "duration_ms": baseline_ms,
-                                  "sources": manifest_a, "usage": sum_usage([packet]), "metrics": None},
-                     "enhanced": {"report": render_markdown(state.report, state.sources, state.evidence),
-                                  "structured_report": state.report.model_dump(mode="json"),
-                                  "evidence": [e.model_dump(mode="json") for e in state.evidence],
-                                  "duration_ms": int((time.perf_counter() - start) * 1000),
-                                  "sources": manifest_b, "usage": enhanced_usage, "outer_calls": state.calls,
-                                  "metrics": score_claims(state.report, {})}}}
+    fingerprint = {"task": task, "settings": safe_settings, "mode": mode, "upstream": UPSTREAM_COMMIT}
+    if hasattr(backend_b, "packet"):
+        fingerprint["corpus"] = source_manifest(backend_b.packet.sources)
+    digest = hashlib.sha256(json.dumps(fingerprint, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+    directory = Path(config.get("cache_dir", Path(store.path).parent / "pairs"))
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / (digest + ".json")
+    result = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {
+        "task": task, "source_mode": mode, "upstream_commit": UPSTREAM_COMMIT,
+        "settings": safe_settings, "config_hash": hashlib.sha256(settings_json.encode()).hexdigest(),
+        "budget": {"rounds": request.max_rounds, "outer_calls": request.max_calls, "concurrency": 2},
+        "comparison_scope": "frozen corpus writing/planning" if mode == "frozen" else mode,
+        "status": "pending", "attempt_errors": [],
+        "arms": {"baseline": {"status": "pending"}, "enhanced": {"status": "pending"}}}
+
+    def persist():
+        temporary = path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+        temporary.replace(path)
+
+    def failed(arm, exc, start):
+        result["arms"][arm].update(status="failed", error=f"{type(exc).__name__}: {exc}"[:1000],
+                                   duration_ms=result["arms"][arm].get("duration_ms", 0) + int((time.perf_counter() - start) * 1000))
+        result["status"] = "failed"
+        result["attempt_errors"].append({"arm": arm, "error": result["arms"][arm]["error"]})
+        persist()
+
+    if result["arms"]["baseline"]["status"] != "completed":
+        start = time.perf_counter()
+        try:
+            baseline, packet = await backend_a.baseline(request)
+            result["arms"]["baseline"] = {"status": "completed", "report": baseline,
+                "packet": packet.model_dump(mode="json"), "sources": source_manifest(packet.sources),
+                "duration_ms": result["arms"]["baseline"].get("duration_ms", 0) + int((time.perf_counter() - start) * 1000),
+                "usage": sum_usage([packet]), "metrics": None}
+            persist()  # Paid baseline material survives every later failure.
+        except Exception as exc:
+            failed("baseline", exc, start)
+            return result
+    arm = result["arms"]["enhanced"]
+    if arm["status"] != "completed":
+        if "run_id" not in arm:
+            arm["run_id"] = store.create(request).run_id
+            persist()
+        before = dict(getattr(model, "usage", {}))
+        start = time.perf_counter()
+        state = await run_research(arm["run_id"], backend_b, model, store)
+        after = getattr(model, "usage", {})
+        tokens = dict(arm.get("usage", {}).get("orchestrator_tokens") or {})
+        for key in after:
+            tokens[key] = tokens.get(key, 0) + after[key] - before.get(key, 0)
+        usage = sum_usage(list(state.completed_steps.values()))
+        usage["orchestrator_tokens"] = tokens or None
+        arm.update(usage=usage, outer_calls=state.calls, sources=source_manifest(state.sources),
+                   packets={key: p.model_dump(mode="json") for key, p in state.completed_steps.items()})
+        if state.status != "completed":
+            failed("enhanced", RuntimeError(state.error or "enhanced research failed"), start)
+            return result
+        try:
+            if mode == "frozen" and result["arms"]["baseline"]["sources"] != source_manifest(state.sources):
+                raise ValueError("Frozen comparison requires identical source corpus")
+            arm.update(status="completed", report=render_markdown(state.report, state.sources, state.evidence),
+                       structured_report=state.report.model_dump(mode="json"),
+                       evidence=[e.model_dump(mode="json") for e in state.evidence],
+                       duration_ms=arm.get("duration_ms", 0) + int((time.perf_counter() - start) * 1000),
+                       metrics=score_claims(state.report, {}))
+            arm.pop("error", None)
+            result["status"] = "completed"
+            persist()
+        except Exception as exc:
+            failed("enhanced", exc, start)
+    return result
 
 
 def export_blind_pairs(results, seed):
@@ -110,7 +156,7 @@ def export_blind_pairs(results, seed):
         pairs.append({"pair_id": pair_id, "topic": result["task"]["topic"],
                       "constraints": result["task"]["constraints"],
                       "required_dimensions": result["task"]["required_dimensions"],
-                      "candidates": [{"slot": slot, "report": result["arms"][arm]["report"]}
+                      "candidates": [{"slot": slot, "report": result["arms"][arm].get("report", "研究失败，未生成报告")}
                                      for slot, arm in mapping[pair_id].items()]})
     return pairs, mapping
 

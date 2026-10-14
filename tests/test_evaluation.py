@@ -71,3 +71,43 @@ async def test_pair_records_unknown_usage_and_hides_mapping(tmp_path):
     text = json.dumps(pairs)
     assert "baseline" not in text and "enhanced" not in text
     assert "run_id" not in text and "config_hash" not in text
+
+
+async def test_failed_pair_preserves_baseline_and_resumes_without_paying_again(tmp_path):
+    class CountingBaseline(SyntheticBaseline):
+        calls = 0
+        async def baseline(self, request):
+            self.calls += 1
+            return await super().baseline(request)
+    class FailOnce(ReplayBackend):
+        failed = False
+        async def research(self, question, request):
+            if not self.failed:
+                self.failed = True
+                raise RuntimeError("synthetic research failure")
+            return await super().research(question, request)
+    a, b = CountingBaseline(), FailOnce()
+    config = {"model": ReplayModel(), "store": SQLiteStore(tmp_path / "db.sqlite3"),
+              "settings": {"model": "synthetic"}, "source_mode": "synthetic", "cache_dir": tmp_path / "pairs"}
+    first = await run_pair(task(), a, b, config)
+    assert first["status"] == "failed"
+    assert first["arms"]["baseline"]["status"] == "completed"
+    assert first["arms"]["baseline"]["packet"]["sources"][0]["text"]
+    assert list((tmp_path / "pairs").glob("*.json"))
+    recovered = await run_pair(task(), a, b, config)
+    assert recovered["status"] == "completed"
+    assert a.calls == 1
+    assert recovered["attempt_errors"]
+
+
+async def test_earlier_success_survives_later_task_failure(tmp_path):
+    class Failure(ReplayBackend):
+        async def research(self, question, request):
+            raise RuntimeError("forced failure")
+    config = {"model": ReplayModel(), "store": SQLiteStore(tmp_path / "db.sqlite3"),
+              "settings": {"model": "synthetic"}, "source_mode": "synthetic", "cache_dir": tmp_path / "pairs"}
+    completed = await run_pair(task(), SyntheticBaseline(), ReplayBackend(), config)
+    failed = await run_pair(task("dev-02", "chunking"), SyntheticBaseline(), Failure(), config)
+    assert completed["status"] == "completed" and failed["status"] == "failed"
+    saved = [json.loads(p.read_text(encoding="utf-8")) for p in (tmp_path / "pairs").glob("*.json")]
+    assert sorted(r["status"] for r in saved) == ["completed", "failed"]

@@ -18,6 +18,8 @@ python scripts/run_eval.py --mode live --split online --limit 5
 
 结果保存在忽略的 runtime 下，包含模型配置摘要/哈希、上游提交、日期、预算、来源摘要、耗时与实际已知用量。完整正文不得自动上传。`blind-pairs.json` 只含题目、约束和 X/Y 报告；`private-mapping.json` 仅由组织评测的人保留。随机 seed 固定顺序，报告风格本身仍可能暴露方法，盲评并非绝对匿名。
 
+每个 arm 完成即在本机 pairs 缓存保存完整 packet 与报告，每题更新汇总；失败状态和尝试历史保留。恢复时传入相同 `--output runtime/evals/某次目录`，成功基线与增强结果直接复用，失败增强任务跳过已保存步骤。修改题目/配置/冻结材料会创建新的缓存键。供应商成功但落盘前崩溃仍可能重做，失败请求的未知费用保留缺项。
+
 ## 人工标注
 
 先逐条提取两边报告的确定性事实。基础版的自由 Markdown 由人工分割成 `ResearchReport` 的 claims；不要把模型自动分割结果当成真值。增强版已有 claims，也应检查是否将事实伪装成建议。为每个事实填 `fact_supported`，为每个引用事实填 `citation_supported`，均为人工布尔判断；逐项填 covered_dimensions，最后填写 1–5 分 blind_score。
