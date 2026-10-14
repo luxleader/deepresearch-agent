@@ -28,10 +28,10 @@ uv run ruff check src tests scripts
 在阿里云百炼与 Tavily 控制台准备接口密钥，确认 qwen-plus 可用并取得账号区域/空间对应的兼容 base URL。示例地址需按控制台修改，密钥只填本机 .env，不发到聊天或提交 Git。
 
 ```powershell
-uv pip install --python .venv/Scripts/python.exe -r requirements-live.txt
+uv pip install --python .venv/Scripts/python.exe -r requirements-live.lock
 ```
 
-Linux/macOS 使用 `.venv/bin/python`。SDK 固定上游提交，传递依赖尚未单独完整锁定。编辑 .env 后重新启动：
+Linux/macOS 使用 `.venv/bin/python`。requirements-live.lock 固定 SDK 提交与传递依赖、保留平台标记；固定版 SDK 已安装并验证构造/配置加载，尚未请求真实模型和搜索。编辑 .env 后重新启动：
 
 ```dotenv
 DR_MODE=live
