@@ -57,9 +57,11 @@ async def read_public_document(url: str) -> dict:
     """Pin a validated public DNS address and check every redirect before reading."""
     async with httpx.AsyncClient(timeout=25, trust_env=False) as client:
         for _ in range(6):
-            await asyncio.to_thread(validate_public_url, url)
+            validate_public_url(url, resolve=False)
             p = urlsplit(url)
             addresses = await asyncio.to_thread(socket.getaddrinfo, p.hostname, p.port or (443 if p.scheme == "https" else 80))
+            if not addresses or any(not ipaddress.ip_address(item[4][0]).is_global for item in addresses):
+                raise ValueError("禁止读取私有或保留网络地址")
             address = addresses[0][4][0]
             host = f"[{address}]" if ":" in address else address
             target = urlunsplit((p.scheme, host + (f":{p.port}" if p.port else ""), p.path, p.query, ""))

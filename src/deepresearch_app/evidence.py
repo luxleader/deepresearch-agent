@@ -21,7 +21,7 @@ async def collect_evidence(packet, request, model):
         source = source_map.get(item.source_id)
         if source is None:
             continue
-        if normalize_text(item.quote) not in normalize_text(source.text):
+        if not normalize_text(item.quote) or not normalize_text(source.text) or normalize_text(item.quote) not in normalize_text(source.text):
             item.verdict = "uncertain"
             item.reason = "原文片段不存在；不得作为已支持证据"
         if source.time_status == "after_cutoff":

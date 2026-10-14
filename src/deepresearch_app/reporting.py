@@ -16,6 +16,8 @@ def validate_report(report, sources, evidence):
         errors.append("重复 evidence ID")
     references = report.summary_claim_ids + report.limitation_claim_ids
     for row in report.comparison:
+        references.append(row.label)
+        references.extend(row.aspects)
         for ids in row.aspects.values():
             references += ids
     for cid in references:
@@ -39,7 +41,7 @@ def validate_report(report, sources, evidence):
             except ValueError:
                 errors.append("非法来源 URL: " + eid)
                 continue
-            if normalize_text(item.quote) not in normalize_text(source.text):
+            if not normalize_text(item.quote) or not normalize_text(source.text) or normalize_text(item.quote) not in normalize_text(source.text):
                 errors.append("原文片段不存在: " + eid)
                 continue
             if item.verdict == "supported" and source.time_status != "after_cutoff":
@@ -75,9 +77,9 @@ def render_markdown(report, sources, evidence):
     if report.comparison:
         text.extend(["", "## 方案对比", ""])
         for row in report.comparison:
-            text.append("### " + escape(row.label))
+            text.append("### " + line(row.label))
             for name, ids in row.aspects.items():
-                text.append("- " + escape(name) + "：" + "；".join(line(cid) for cid in ids))
+                text.append("- " + line(name) + "：" + "；".join(line(cid) for cid in ids))
     text.extend(["", "## 核验命题与建议", ""])
     text.extend("- " + line(c.id) for c in report.claims if c.id not in report.limitation_claim_ids)
     text.extend(["", "## 局限与未知项", ""])

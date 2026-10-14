@@ -1,7 +1,7 @@
 import pytest
 
 from deepresearch_app.evidence import collect_evidence
-from deepresearch_app.models import EvidenceBatch, ReportClaim, ResearchPacket, ResearchReport
+from deepresearch_app.models import ComparisonRow, EvidenceBatch, ReportClaim, ResearchPacket, ResearchReport
 from deepresearch_app.reporting import render_markdown, validate_report
 
 
@@ -54,3 +54,32 @@ class ForgingModel:
 async def test_collector_downgrades_nonexistent_quote(sources, research_request):
     result = await collect_evidence(ResearchPacket(context="", sources=sources), research_request, ForgingModel())
     assert result[0].verdict == "uncertain"
+
+
+def test_comparison_metadata_cannot_bypass_claim_ledger(sources, evidence):
+    report = good_report()
+    report.comparison = [ComparisonRow(label="此方案性能提高十倍", aspects={"预算降低90%": ["c1"]})]
+    assert not validate_report(report, sources, evidence).valid
+
+
+def test_whitespace_quote_cannot_support_fact(sources, evidence):
+    evidence[0].quote = " \n\t "
+    assert not validate_report(good_report(), sources, evidence).valid
+
+
+async def test_collector_downgrades_whitespace_quote(sources, research_request):
+    class BlankModel:
+        async def generate(self, prompt, schema):
+            batch = EvidenceBatch(evidence=[{"id": "blank", "source_id": "s1", "quote": "initial",
+                                           "claim": "命题", "verdict": "supported", "reason": "guess"}])
+            batch.evidence[0].quote = " \n "
+            return batch
+    result = await collect_evidence(ResearchPacket(context="", sources=sources), research_request, BlankModel())
+    assert result[0].verdict == "uncertain"
+
+
+def test_comparison_uses_claim_ids_for_every_label(sources, evidence):
+    report = good_report()
+    report.comparison = [ComparisonRow(label="c1", aspects={"c1": ["c1"]})]
+    assert validate_report(report, sources, evidence).valid
+    assert "### 事实：" in render_markdown(report, sources, evidence)

@@ -43,6 +43,13 @@ class Source(Model):
     time_status: Literal["within_cutoff", "after_cutoff", "unknown"] = "unknown"
     version: str | None = None
 
+    @field_validator("text")
+    @classmethod
+    def nonblank_text(cls, value):
+        if not value.strip():
+            raise ValueError("来源正文不能全为空白")
+        return value
+
 
 class Evidence(Model):
     id: str
@@ -51,6 +58,13 @@ class Evidence(Model):
     claim: str = Field(min_length=1)
     verdict: Literal["supported", "contradicted", "uncertain"]
     reason: str
+
+    @field_validator("quote", "claim")
+    @classmethod
+    def nonblank_evidence(cls, value):
+        if not value.strip():
+            raise ValueError("引用和命题不能全为空白")
+        return value
 
 
 class EvidenceBatch(Model):
@@ -78,8 +92,8 @@ class ReportClaim(Model):
 
 
 class ComparisonRow(Model):
-    label: str
-    aspects: dict[str, list[str]]
+    label: str = Field(description="候选方案名称的 claim ID，不能填自由文本")
+    aspects: dict[str, list[str]] = Field(description="键为维度名称的 claim ID，值为该维度下结论 claim ID 列表")
 
 
 class ResearchReport(Model):
