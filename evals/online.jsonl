@@ -1,0 +1,5 @@
+{"id":"online-01","topic_family":"retrieval","topic":"中文 PDF 知识库应选择向量检索还是混合检索？","constraints":{"数据":"中文 PDF","预算":"有限","更新":"每周增量"},"as_of":"2026-10-14","required_dimensions":["中文适用性","更新","成本","实验条件"]}
+{"id":"online-02","topic_family":"retrieval","topic":"商品名称和型号混合查询如何组合 BM25 与稠密检索？","constraints":{"数据":"短文本与型号","延迟":"单请求 200ms"},"as_of":"2026-10-14","required_dimensions":["型号精确匹配","语义检索","融合","延迟"]}
+{"id":"online-03","topic_family":"embedding","topic":"离线部署中文嵌入模型，应怎样选择模型大小和维度？","constraints":{"部署":"单张 16GB GPU","数据":"中文长文"},"as_of":"2026-10-14","required_dimensions":["模型许可","维度","长文限制","评测"]}
+{"id":"online-04","topic_family":"embedding","topic":"多语种客服知识库的嵌入模型如何评估迁移风险？","constraints":{"语言":"中文与英文","更新":"每日"},"as_of":"2026-10-14","required_dimensions":["语言覆盖","领域偏差","增量更新","成本"]}
+{"id":"online-05","topic_family":"chunking","topic":"含表格的 PDF 应采用固定切块还是结构化切块？","constraints":{"数据":"文本 PDF 与表格","部署":"CPU"},"as_of":"2026-10-14","required_dimensions":["解析","切块","表格","失败边界"]}

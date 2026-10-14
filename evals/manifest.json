@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "dev_count": 10,
+  "holdout_count": 20,
+  "split_policy": "disjoint topic families",
+  "as_of": "2026-10-14",
+  "annotation_status": "pending human review",
+  "source_snapshots": [],
+  "quality_results": null,
+  "synthetic_replay": "workflow smoke only"
+}

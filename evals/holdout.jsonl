@@ -1,0 +1,20 @@
+{"id":"holdout-01","topic_family":"inference-serving","topic":"单卡模型推理选择 vLLM 还是其他推理引擎？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["显存","吞吐","延迟","版本"]}
+{"id":"holdout-02","topic_family":"inference-serving","topic":"低流量服务应使用静态批次还是连续批处理？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["流量","排队","资源","性能测试"]}
+{"id":"holdout-03","topic_family":"quantization","topic":"4-bit 量化是否适合中文问答部署？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["精度","显存","硬件","量化校准"]}
+{"id":"holdout-04","topic_family":"quantization","topic":"AWQ 与 GPTQ 在单卡部署中如何选择？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["支持模型","硬件","误差","实验设置"]}
+{"id":"holdout-05","topic_family":"fine-tuning","topic":"领域问答应选择 LoRA 微调还是提示优化？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["数据","效果","训练成本","更新"]}
+{"id":"holdout-06","topic_family":"fine-tuning","topic":"小样本指令微调如何减少过拟合？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["数据质量","验证集","超参数","许可"]}
+{"id":"holdout-07","topic_family":"structured-generation","topic":"JSON mode 与受约束解码在工具调用中如何取舍？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["schema","失败恢复","延迟","支持接口"]}
+{"id":"holdout-08","topic_family":"structured-generation","topic":"复杂嵌套 schema 的输出怎样进行校验与修复？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["类型","修复次数","成本","可观测性"]}
+{"id":"holdout-09","topic_family":"agent-orchestration","topic":"研究 Agent 是否需要图式工作流编排？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["恢复","并发","状态","复杂度"]}
+{"id":"holdout-10","topic_family":"agent-orchestration","topic":"串行与并行多 Agent 研究如何设计对照实验？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["预算","信息共享","重复搜索","公平性"]}
+{"id":"holdout-11","topic_family":"multimodal","topic":"中文文档图表理解应该采用 OCR 管道还是多模态模型？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["图表","成本","引用定位","错误类型"]}
+{"id":"holdout-12","topic_family":"multimodal","topic":"扫描票据抽取选择视觉模型还是专用文档解析？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["数据格式","准确性","部署","隐私"]}
+{"id":"holdout-13","topic_family":"distributed-training","topic":"小团队多卡训练应选择 DDP 还是参数分片？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["显存","通信","检查点","版本"]}
+{"id":"holdout-14","topic_family":"distributed-training","topic":"长序列训练如何组合梯度检查点与分片？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["序列长度","吞吐","显存","复杂度"]}
+{"id":"holdout-15","topic_family":"observability","topic":"LLM 应用如何记录调用链同时控制日志成本？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["trace","脱敏","成本","失败诊断"]}
+{"id":"holdout-16","topic_family":"observability","topic":"Agent 生产评测如何区分模型错误与工具错误？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["事件","重试","标注","回放"]}
+{"id":"holdout-17","topic_family":"prompt-security","topic":"检索增强助手怎样处理网页提示注入？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["威胁边界","隔离","引用","验证"]}
+{"id":"holdout-18","topic_family":"prompt-security","topic":"工具型 Agent 如何限制外部来源影响执行权限？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["权限","审计","攻击测试","未知风险"]}
+{"id":"holdout-19","topic_family":"prompt-caching","topic":"长系统提示应选择服务商缓存还是本地缓存策略？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["命中","计费","失效","数据范围"]}
+{"id":"holdout-20","topic_family":"prompt-caching","topic":"动态检索上下文如何排列才能提高提示缓存命中？","constraints":{"部署":"小型研发团队","需求":"引用官方文档与论文并说明适用边界"},"as_of":"2026-10-14","required_dimensions":["上下文布局","稳定前缀","实测","时效"]}
