@@ -1,10 +1,11 @@
 import asyncio
 import ipaddress
 import socket
-from html.parser import HTMLParser
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
 import httpx
+
+from .source_metadata import parse_html
 
 
 def validate_public_url(url: str, *, resolve=True) -> str:
@@ -32,25 +33,6 @@ def canonical_url(url: str) -> str:
     p = urlsplit(url)
     query = [(k, v) for k, v in parse_qsl(p.query) if not k.lower().startswith("utm_")]
     return urlunsplit((p.scheme.lower(), p.netloc.lower(), p.path or "/", urlencode(query), ""))
-
-
-class TextParser(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self.hidden = 0
-        self.parts = []
-
-    def handle_starttag(self, tag, attrs):
-        if tag in {"script", "style", "noscript"}:
-            self.hidden += 1
-
-    def handle_endtag(self, tag):
-        if tag in {"script", "style", "noscript"}:
-            self.hidden = max(0, self.hidden - 1)
-
-    def handle_data(self, data):
-        if not self.hidden and data.strip():
-            self.parts.append(data.strip())
 
 
 async def read_public_document(url: str) -> dict:
@@ -84,9 +66,8 @@ async def read_public_document(url: str) -> dict:
                     reader = PdfReader(io.BytesIO(chunks))
                     text = "\n".join(page.extract_text() or "" for page in list(reader.pages)[:20])
                 else:
-                    parser = TextParser()
-                    parser.feed(bytes(chunks).decode(response.encoding or "utf-8", errors="replace"))
-                    text = "\n".join(parser.parts)
+                    document = await asyncio.to_thread(parse_html, bytes(chunks).decode(response.encoding or "utf-8", errors="replace"), p.hostname)
+                    return {"url": url, **document}
                 return {"url": url, "title": p.hostname, "raw_content": text[:100000]}
     raise ValueError("来源重定向次数过多")
 

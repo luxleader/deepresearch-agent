@@ -38,6 +38,9 @@ class Source(Model):
     text: str = Field(min_length=1)
     retrieved_at: datetime = Field(default_factory=now)
     published_at: date | None = None
+    modified_at: date | None = None
+    date_basis: str | None = None
+    metadata_warnings: list[str] = Field(default_factory=list)
     source_type: str = "unknown"
     content_hash: str
     time_status: Literal["within_cutoff", "after_cutoff", "unknown"] = "unknown"

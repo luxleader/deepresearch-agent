@@ -3,7 +3,7 @@ from datetime import date
 import pytest
 from pydantic import ValidationError
 
-from deepresearch_app.backends.gptr import GPTRBackend
+from deepresearch_app.backends.gptr import GPTRBackend, normalize_sources
 from deepresearch_app.models import ResearchRequest
 from deepresearch_app.network import validate_public_url
 from deepresearch_app.settings import Settings
@@ -85,3 +85,21 @@ async def test_every_sdk_query_keeps_constraints_and_cutoff(tmp_path, research_r
         assert research_request.as_of.isoformat() in query
         assert "官方文档" in query and "论文" in query
     assert "补搜重排方案" in queries[0]
+
+
+def test_source_metadata_survives_adapter_and_cutoff(research_request):
+    raw = {"url": "https://example.org/doc", "title": "官方技术文档", "raw_content": "实际正文",
+           "published_at": "2026-10-15", "modified_at": "2026-10-16", "date_basis": "meta:article:published_time",
+           "metadata_warnings": ["站点自报日期，未核对历史快照"]}
+    source = normalize_sources([raw], research_request)[0]
+    assert source.time_status == "after_cutoff"
+    assert source.modified_at == date(2026, 10, 16)
+    assert source.date_basis == "meta:article:published_time"
+    assert source.metadata_warnings
+
+
+def test_current_page_modified_after_cutoff_is_not_historical_evidence(research_request):
+    raw = {"url": "https://example.org/doc", "raw_content": "当前版本正文",
+           "published_at": "2025-01-01", "modified_at": "2026-10-15"}
+    source = normalize_sources([raw], research_request)[0]
+    assert source.time_status == "after_cutoff"

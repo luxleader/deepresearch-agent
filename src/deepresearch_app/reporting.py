@@ -91,6 +91,11 @@ def render_markdown(report, sources, evidence):
         s = smap[e.source_id]
         text.extend([f"- [{escape(eid)}] [{escape(s.title)}]({s.url})", f"  原文：{escape(e.quote)}",
                      f"  支持判断：{e.verdict}；{escape(e.reason)}（模型判断需人工抽查）"])
+        text.append(f"  发布日期：{s.published_at or '未知'}；修改日期：{s.modified_at or '未知'}；版本：{escape(s.version or '未知')}。")
+        if s.date_basis:
+            text.append("  日期依据：" + escape(s.date_basis) + "（站点声明，未独立验证）。")
+        for warning in s.metadata_warnings:
+            text.append("  来源提示：" + escape(warning))
         if s.time_status == "unknown":
             text.append("  时间适用性未核实；抓取时间不代表发布日期。")
         if s.time_status == "after_cutoff":

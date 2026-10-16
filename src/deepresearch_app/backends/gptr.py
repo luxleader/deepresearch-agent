@@ -7,6 +7,7 @@ from pathlib import Path
 
 from ..models import ResearchPacket, Source
 from ..network import SafeBrowser, canonical_url
+from ..source_metadata import declared_date
 
 UPSTREAM_COMMIT = "3582a6841fe7dc801e2a34e34ee408641aea9bce"
 
@@ -31,13 +32,16 @@ def normalize_sources(raw_sources, request):
             continue
         digest = hashlib.sha256(text.encode()).hexdigest()
         sid = "s-" + hashlib.sha256((url + digest).encode()).hexdigest()[:16]
-        try:
-            published = date.fromisoformat(str(raw.get("published_at", ""))[:10])
-        except ValueError:
-            published = None
-        status = "unknown" if published is None else "after_cutoff" if published > request.as_of else "within_cutoff"
+        published = declared_date(raw.get("published_at"))
+        modified = declared_date(raw.get("modified_at"))
+        published = date.fromisoformat(published) if published else None
+        modified = date.fromisoformat(modified) if modified else None
+        after_cutoff = any(d is not None and d > request.as_of for d in (published, modified))
+        status = "after_cutoff" if after_cutoff else "unknown" if published is None else "within_cutoff"
         sources[sid] = Source(id=sid, url=url, title=str(raw.get("title", url)), text=text,
                              content_hash=digest, published_at=published, time_status=status,
+                             modified_at=modified, date_basis=raw.get("date_basis"),
+                             metadata_warnings=raw.get("metadata_warnings", []),
                              source_type=raw.get("source_type", "unknown"), version=raw.get("version"))
     return list(sources.values())
 
