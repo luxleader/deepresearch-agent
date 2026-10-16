@@ -26,7 +26,7 @@ async def run_research(run_id, backend, model, store, *, timeout=180):
         store.append_event(run_id, stage, {"round": state.round, "calls": store.get(run_id).calls})
 
     async def generate(prompt, schema):
-        return await asyncio.wait_for(model.generate(prompt, schema), timeout=180)
+        return await asyncio.wait_for(model.generate(prompt, schema), timeout=min(timeout, 180))
 
     try:
         state.status = "running"
@@ -69,7 +69,10 @@ async def run_research(run_id, backend, model, store, *, timeout=180):
                     smap[source.id] = source
                 if key not in state.reviewed_steps:
                     if packet.sources:
-                        for e in await collect_evidence(packet, state.request, model):
+                        state.sources = list(smap.values())
+                        save("review")
+                        reviewed = await asyncio.wait_for(collect_evidence(packet, state.request, model), timeout=min(timeout, 180))
+                        for e in reviewed:
                             emap[e.id] = e
                     state.reviewed_steps.append(key)
                     state.sources = list(smap.values())

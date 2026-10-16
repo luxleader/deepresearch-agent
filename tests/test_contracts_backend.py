@@ -67,3 +67,21 @@ async def test_baseline_uses_sdk_report(tmp_path):
     text, packet = await backend.baseline(ResearchRequest(topic="研究"))
     assert text == "基础报告"
     assert len(packet.sources) == 1
+
+
+async def test_every_sdk_query_keeps_constraints_and_cutoff(tmp_path, research_request):
+    queries = []
+    class InspectSDK(FakeSDK):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            queries.append(kwargs["query"])
+    backend = GPTRBackend(Settings(), sdk_factory=InspectSDK, config_dir=tmp_path)
+    await backend.research("补搜重排方案", research_request)
+    await backend.baseline(research_request)
+    assert len(queries) == 2
+    for query in queries:
+        assert research_request.topic in query
+        assert "预算" in query and "有限" in query
+        assert research_request.as_of.isoformat() in query
+        assert "官方文档" in query and "论文" in query
+    assert "补搜重排方案" in queries[0]

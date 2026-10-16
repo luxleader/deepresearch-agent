@@ -11,6 +11,14 @@ from ..network import SafeBrowser, canonical_url
 UPSTREAM_COMMIT = "3582a6841fe7dc801e2a34e34ee408641aea9bce"
 
 
+def research_query(question, request):
+    scope = {"研究主题": request.topic, "本次子问题": question, "使用约束": request.constraints,
+             "资料截止日期": request.as_of.isoformat()}
+    return ("根据以下研究范围检索官方文档与论文，围绕使用约束取材。优先原始来源，保留版本和实验条件。"
+            "晚于截止日期的资料不作为当时事实；无法确认日期时明确未知。\n"
+            + json.dumps(scope, ensure_ascii=False))
+
+
 def normalize_sources(raw_sources, request):
     sources = {}
     for raw in raw_sources:
@@ -77,13 +85,13 @@ class GPTRBackend:
 
     async def research(self, question, request):
         start = time.perf_counter()
-        sdk = self._new_sdk(question)
+        sdk = self._new_sdk(research_query(question, request))
         context = await sdk.conduct_research()
         return self._packet(sdk, context, request, start)
 
     async def baseline(self, request):
         start = time.perf_counter()
-        query = request.topic + "\n使用约束：" + json.dumps(request.constraints, ensure_ascii=False)
+        query = research_query(request.topic, request)
         sdk = self._new_sdk(query)
         context = await sdk.conduct_research()
         report = await sdk.write_report()

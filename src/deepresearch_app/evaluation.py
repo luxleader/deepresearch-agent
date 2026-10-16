@@ -5,7 +5,7 @@ import random
 import time
 from pathlib import Path
 
-from .backends.gptr import UPSTREAM_COMMIT
+from .backends.gptr import UPSTREAM_COMMIT, research_query
 from .models import ResearchPacket, ResearchRequest
 from .reporting import render_markdown
 from .research import run_research
@@ -174,7 +174,7 @@ class FrozenBackend:
         return self.packet.model_copy(update={"usage": {"cost_complete": False}, "duration_ms": 0})
 
     async def baseline(self, request):
-        sdk = self.native_backend._new_sdk(request.topic + "\n使用约束：" + json.dumps(request.constraints, ensure_ascii=False))
+        sdk = self.native_backend._new_sdk(research_query(request.topic, request))
         markdown = await sdk.write_report(ext_context=self.packet.context)
         packet = self.packet.model_copy(update={"usage": {"sdk_estimated_usd": sdk.get_costs(), "cost_complete": False}})
         return markdown, packet

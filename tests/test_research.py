@@ -1,7 +1,7 @@
 import asyncio
 
 from deepresearch_app.backends.replay import ReplayBackend, ReplayModel
-from deepresearch_app.models import ReportClaim, ResearchReport
+from deepresearch_app.models import EvidenceBatch, ReportClaim, ResearchReport
 from deepresearch_app.reporting import validate_report
 from deepresearch_app.research import run_research
 from deepresearch_app.storage import SQLiteStore
@@ -95,3 +95,24 @@ async def test_system_warning_ids_never_collide(tmp_path, research_request):
     result = await run_research(run.run_id, ReplayBackend(), CollisionModel(), store)
     assert result.status == "completed"
     assert validate_report(result.report, result.sources, result.evidence).valid
+
+
+async def test_evidence_review_timeout_keeps_saved_steps_for_resume(tmp_path, research_request):
+    class HangingReviewer(ReplayModel):
+        async def generate(self, prompt, schema):
+            if schema is EvidenceBatch:
+                await asyncio.sleep(10)
+            return await super().generate(prompt, schema)
+    store = SQLiteStore(tmp_path / "review-timeout.sqlite3")
+    run = store.create(research_request)
+    backend = TrackingBackend()
+    try:
+        result = await asyncio.wait_for(run_research(run.run_id, backend, HangingReviewer(), store, timeout=0.02), timeout=0.5)
+    except TimeoutError:
+        result = store.get(run.run_id)
+    assert result.status == "failed"
+    assert len(result.completed_steps) == 2
+    saved_question = result.round_questions["1"][0]
+    restored = await run_research(run.run_id, backend, ReplayModel(), store)
+    assert restored.status == "completed"
+    assert backend.questions.count(saved_question) == 1
