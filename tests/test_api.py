@@ -33,6 +33,33 @@ def test_full_api_flow_export_and_completed_resume(tmp_path):
         assert client.get(f"/api/research/{run_id}/events?after_seq=0").json()["events"]
 
 
+def test_json_export_can_trace_every_claim_to_original_text(tmp_path):
+    with TestClient(create_app(SQLiteStore(tmp_path / "export.sqlite"), ReplayBackend(), ReplayModel())) as client:
+        run_id = client.post("/api/research", json={"topic": "核对中文检索方案", "constraints": {"部署": "本机"}}).json()["run_id"]
+        for _ in range(200):
+            state = client.get(f"/api/research/{run_id}").json()
+            if state["status"] in {"completed", "failed"}:
+                break
+            time.sleep(0.01)
+        assert state["status"] == "completed"
+        response = client.get(f"/api/research/{run_id}/report?format=json")
+        payload = response.json()
+        assert payload["schema_version"] == 1
+        assert payload["request"]["constraints"] == {"部署": "本机"}
+        assert payload["plan"]["required_dimensions"]
+        assert payload["run_id"] == run_id
+        sources = {s["id"]: s for s in payload["sources"]}
+        evidence = {e["id"]: e for e in payload["evidence"]}
+        for claim in payload["claims"]:
+            for eid in claim["evidence_ids"]:
+                item = evidence[eid]
+                assert item["quote"] in sources[item["source_id"]]["text"]
+                assert sources[item["source_id"]]["content_hash"]
+        assert len(payload["research_steps"]) == 3
+        assert payload["usage_complete"] is False
+        assert "attachment" in response.headers["content-disposition"]
+
+
 def test_resume_running_run_returns_409(tmp_path, research_request):
     store = SQLiteStore(tmp_path / "api.sqlite")
     app = create_app(store, ReplayBackend(), ReplayModel())
@@ -49,6 +76,12 @@ def test_invalid_input_and_missing_run(tmp_path):
         assert client.get("/api/research/missing").status_code == 404
         assert client.get("/").status_code == 200
         assert client.get("/static/app.js").status_code == 200
+
+
+def test_workbench_and_exports_do_not_reuse_old_cached_assets(tmp_path):
+    with TestClient(create_app(SQLiteStore(tmp_path / "cache.sqlite"), ReplayBackend(), ReplayModel())) as client:
+        for path in ("/", "/static/app.js", "/static/report-view.js", "/api/health"):
+            assert client.get(path).headers.get("cache-control") == "no-store"
 
 
 def test_restart_marks_interrupted_without_auto_execution(tmp_path, research_request):

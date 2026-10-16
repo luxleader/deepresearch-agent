@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>研究台 · AI 技术方案调研</title>
-  <link rel="stylesheet" href="/static/style.css"><script src="/static/app.js" defer></script>
+  <link rel="stylesheet" href="/static/style.css?v=20261016"><script src="/static/report-view.js?v=20261016" defer></script><script src="/static/app.js?v=20261016" defer></script>
 </head>
 <body>
   <header><a class="brand" href="/">研究台<span>TECHNICAL RESEARCH</span></a><div id="mode" class="mode">检查运行环境…</div></header>
@@ -21,17 +21,17 @@
           <button type="submit" id="submit" class="primary">开始研究 <span>→</span></button>
           <p class="help">来源支持判断需要人工核对。资料不足时，报告会保留未知项。</p>
         </form>
-        <p id="error" role="alert" hidden></p>
+        <p id="error" role="alert" hidden></p><button type="button" id="retry" hidden>重新获取进度</button>
       </aside>
       <section class="results" aria-label="研究结果">
-        <div class="section-title"><span>02</span><h2>检查研究</h2><span id="status">等待问题</span></div>
+        <div class="section-title"><span>02</span><h2>检查研究</h2><span id="status" role="status" aria-live="polite">等待问题</span></div>
         <div class="metrics"><div><small>研究轮次</small><strong id="metric-round">—</strong></div><div><small>已执行调用</small><strong id="metric-calls">—</strong></div><div><small>读取来源</small><strong id="metric-sources">—</strong></div></div>
         <p id="notice" class="notice">提交问题后，可以在这里查看执行过程与证据。</p>
         <div class="tabs" role="tablist"><button id="tab-report" role="tab" aria-selected="true" data-panel="report-panel">研究报告</button><button id="tab-sources" role="tab" aria-selected="false" data-panel="sources-panel">来源与证据</button><button id="tab-events" role="tab" aria-selected="false" data-panel="events-panel">执行过程</button></div>
-        <section id="report-panel" role="tabpanel" aria-labelledby="tab-report"><div id="empty"><span class="empty-mark">↗</span><h3>从一个真实问题开始</h3><p>报告将区分事实、建议和未知项。<br>每个关键事实可以回到原文核对。</p></div><pre id="report" hidden></pre></section>
+        <section id="report-panel" role="tabpanel" aria-labelledby="tab-report"><div id="empty"><span class="empty-mark">↗</span><h3>从一个真实问题开始</h3><p>报告将区分事实、建议和未知项。<br>每个关键事实可以回到原文核对。</p></div><article id="report" hidden></article></section>
         <section id="sources-panel" role="tabpanel" aria-labelledby="tab-sources" hidden><p class="help">证据判断由模型辅助，引用片段存在不代表结论一定正确。</p><div id="sources"></div><div id="evidence"></div></section>
         <section id="events-panel" role="tabpanel" aria-labelledby="tab-events" hidden><ol id="events"></ol></section>
-        <div class="actions"><button id="resume" hidden>恢复任务</button><a id="download-md" hidden>下载 Markdown ↗</a><a id="download-json" hidden>查看 JSON ↗</a></div>
+        <div class="actions"><button id="resume" hidden>恢复任务</button><a id="download-md" hidden>下载 Markdown ↗</a><a id="download-json" hidden>下载完整 JSON ↗</a></div>
       </section>
     </div>
   </main><footer>研究台 / 本机技术调研工作台 <span>事实 · 证据 · 判断</span></footer>

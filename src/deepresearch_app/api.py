@@ -4,12 +4,12 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .models import ResearchRequest
-from .reporting import render_markdown, validate_report
+from .reporting import render_markdown, report_export, validate_report
 from .research import run_research
 
 
@@ -25,6 +25,13 @@ def create_app(store, backend, model, *, step_timeout=180):
         await asyncio.gather(*list(tasks.values()), return_exceptions=True)
 
     app = FastAPI(title="AI 技术方案调研", lifespan=lifespan)
+
+    @app.middleware("http")
+    async def current_local_content(request, call_next):
+        response = await call_next(request)
+        response.headers["Cache-Control"] = "no-store"
+        return response
+
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
     static = Path(__file__).with_name("static")
     app.mount("/static", StaticFiles(directory=static), name="static")
@@ -82,7 +89,7 @@ def create_app(store, backend, model, *, step_timeout=180):
         if not validate_report(state.report, state.sources, state.evidence).valid:
             raise HTTPException(409, "报告校验未通过")
         if format == "json":
-            return {"mode": state.mode, **state.report.model_dump(mode="json")}
+            return JSONResponse(report_export(state), headers={"Content-Disposition": f'attachment; filename="research-{run_id}.json"'})
         text = render_markdown(state.report, state.sources, state.evidence)
         if state.mode == "replay":
             text = "> 离线人工构造回放，不是真实联网研究或模型效果评测。\n\n" + text

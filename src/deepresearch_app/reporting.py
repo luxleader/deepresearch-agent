@@ -58,6 +58,26 @@ def escape(text):
     return re.sub(r"([\\`*_{}\[\]<>|])", r"\\\1", str(text)).replace("\n", " ")
 
 
+def report_export(state):
+    if state.status != "completed" or state.report is None:
+        raise ValueError("研究尚未完成")
+    validation = validate_report(state.report, state.sources, state.evidence)
+    if not validation.valid:
+        raise ValueError("；".join(validation.errors))
+    return {"schema_version": 1, "mode": state.mode, "run_id": state.run_id,
+            "request": state.request.model_dump(mode="json"),
+            "plan": state.plan.model_dump(mode="json") if state.plan else None,
+            "created_at": state.created_at.isoformat(), "completed_at": state.updated_at.isoformat(),
+            "warnings": state.warnings, "rounds": state.round, "outer_calls": state.calls,
+            "sources": [s.model_dump(mode="json") for s in state.sources],
+            "evidence": [e.model_dump(mode="json") for e in state.evidence],
+            "research_steps": [{"step": key, "duration_ms": p.duration_ms, "usage": p.usage}
+                               for key, p in state.completed_steps.items()],
+            "usage_complete": False,
+            "usage_scope": "仅列已保存研究步骤的已知用量；不包括完整规划/核验/写作用量及失败请求费用，不是总费用。",
+            **state.report.model_dump(mode="json")}
+
+
 def render_markdown(report, sources, evidence):
     validation = validate_report(report, sources, evidence)
     if not validation.valid:
